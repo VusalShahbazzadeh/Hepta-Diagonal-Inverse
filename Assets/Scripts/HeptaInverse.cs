@@ -22,16 +22,13 @@ public class HeptaInverse
 
     private int GetAKernel;
     private int GetBKernel;
+    private int GetDKernel;
     private ComputeBuffer extendedInverseBuffer;
     private ComputeBuffer ABuffer;
     private ComputeBuffer BBuffer;
 
     public HeptaInverse(float[] matrix, int[] diagonalDistances)
     {
-        if (HInverse is null)
-        {
-            throw new Exception("Shader for inversion is missing");
-        }
         if (diagonalDistances.Length != 7)
             throw new Exception("7 Diagonal distances required for hepta-diagonal matrix");
 
@@ -98,10 +95,15 @@ public class HeptaInverse
     {
         HInverse = Resources.Load<ComputeShader>("Assets/Shaders/HeptaInverse.compute");
 
+        if (HInverse is null)
+        {
+            throw new Exception("Shader for inversion is missing");
+        }
         A = new float[(dimension + diagonalDistances[6]) * diagonalDistances[6] * stride];
         B = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         GetAKernel = HInverse.FindKernel("GetA");
         GetBKernel = HInverse.FindKernel("GetB");
+        GetDKernel = HInverse.FindKernel("GetD");
 
         HInverse.SetInt("stride", stride);
         HInverse.SetInt("dimension", dimension);
@@ -109,8 +111,8 @@ public class HeptaInverse
         HInverse.SetInts("diagonalDistances", diagonalDistances);
 
         extendedInverseBuffer = new ComputeBuffer(extendedInverse.Length, stride);
-        ABuffer = new ComputeBuffer(A.Length, stride);
-        BBuffer = new ComputeBuffer(B.Length, stride);
+        ABuffer = new ComputeBuffer(A.Length, sizeof(float));
+        BBuffer = new ComputeBuffer(B.Length, sizeof(float));
         HInverse.SetBuffer(GetAKernel, "extendedInverse", extendedInverseBuffer);
         HInverse.SetBuffer(GetAKernel, "A", ABuffer);
         HInverse.SetBuffer(GetBKernel, "A", ABuffer);

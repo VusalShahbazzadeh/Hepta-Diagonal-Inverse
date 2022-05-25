@@ -37,7 +37,7 @@ public class LTInverse
         augmentedBuffer = new ComputeBuffer(augmented.Length, sizeof(float));
         inverseBuffer = new ComputeBuffer(inverse.Length, sizeof(float));
         
-        
+        PopulateAugmentedInverse();
         matrixBuffer.SetData(matrix);
         augmentedBuffer.SetData(augmented);
         inverseBuffer.SetData(inverse);
@@ -75,6 +75,15 @@ public class LTInverse
     private void PopulateAugmented()
     {
         ltInverse.Dispatch(populateKernel, 7, dimension, stride);
+    }
+
+    private void PopulateAugmentedInverse()
+    {
+	for (int i = 0; i < dimension; i++)
+	{
+	    int index = i * dimension * 2 + i;
+	    augmented[index * stride + maxPower] = 1;
+	}
     }
 
     private void SplitAugmented()
