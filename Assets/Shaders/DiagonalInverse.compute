@@ -1,0 +1,15 @@
+#pragma kernel CSMain
+
+#include "Assets/Shaders/Core/MathOperations.hlsl"
+
+RWStructuredBuffer<float> mat;
+RWStructuredBuffer<float> inverse;
+
+int dimension;
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    int ID = id.x * dimension + id.y;
+    Divide(inverse, mat, inverse, ID, ID, ID,a)
+}

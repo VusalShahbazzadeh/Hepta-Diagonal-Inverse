@@ -17,7 +17,7 @@ bool CheckForZero(RWStructuredBuffer<float> mat, int index)
 
 #define AddValue(NAME, index, power, val) NAME[index * stride + maxPower + power] += val;
 
-#define Divide(NAME1, NAME2, aIndex, bIndex, resIndex, identifier) int identifier##bLowestPower = maxPower+1;\
+#define Divide(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex, identifier) int identifier##bLowestPower = maxPower+1;\
 float identifier##lowestPowerVal = 1;\
 for (int index= - maxPower; index<=maxPower; index++)\
 {\
@@ -34,8 +34,8 @@ if(identifier##bLowestPower > maxPower)\
     identifier##bLowestPower = 0;\
 for (int index= max(- maxPower, - maxPower - identifier##bLowestPower); index<=min(maxPower, maxPower - identifier##bLowestPower) ; index++)\
 {\
-    float aValue = GetValue(NAME1, aIndex, index);\
-    SetValue(NAME2, resIndex, index - identifier##bLowestPower, aValue/identifier##lowestPowerVal);\
+    float aValue = GetValue(NAME2, aIndex, index);\
+    SetValue(NAME3, resIndex, index - identifier##bLowestPower, aValue/identifier##lowestPowerVal);\
 }
 
 #define Multiply(NAME1, NAME2, aIndex, bIndex, resIndex)for (int index= - maxPower; index<=maxPower; index++)\

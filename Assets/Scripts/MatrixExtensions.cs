@@ -15,6 +15,31 @@ public static class MatrixExtensions
         matrix[index * stride + internalIndex] = value;
     }
 
+    public static float[] Multiply(float[] m, float b, int stride, (int height, int width) dimensions)
+    {
+        var computeShader = Resources.Load<ComputeShader>("Assets/Shaders/MatrixMultiplication.compute");
+        var mRes = new float[m.Length];
+
+        var mBuffer = new ComputeBuffer(m.Length, sizeof(float));
+        var ResBuffer = new ComputeBuffer(mRes.Length, sizeof(float));
+        
+        mBuffer.SetData(m);
+        ResBuffer.SetData(mRes);
+
+        computeShader.SetBuffer(1, "A", mBuffer);
+        computeShader.SetBuffer(1, "Res", ResBuffer);
+        
+        computeShader.SetVector("dimension", new Vector2(dimensions.height, dimensions.width));
+        computeShader.SetInt("stride", stride);
+
+        computeShader.Dispatch(1,dimensions.height, dimensions.width,stride);
+
+        mBuffer.Release();
+        ResBuffer.GetData(mRes);
+        ResBuffer.Release();
+        return mRes;
+    }
+    
     public static float[] Multiply(float[] mA, float[] mB, int stride, (int height,int width) dimensionsA, (int height, int width) dimensionsB)
     {
         if (dimensionsA.width != dimensionsB.height)

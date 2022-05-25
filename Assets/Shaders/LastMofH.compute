@@ -1,25 +1,70 @@
 #pragma kernel SplitY
 #pragma kernel SplitZ
+#pragma kernel SetLastColumns
+#pragma kernel FinalizeInverse
 
 #include "Assets/Shaders/Core/MathOperations.hlsl"
 
-
+RWStructuredBuffer<float> H;
 RWStructuredBuffer<float> X;
 RWStructuredBuffer<float> Y;
 RWStructuredBuffer<float> Z;
+RWStructuredBuffer<float> LastMofH;
 RWStructuredBuffer<float> HInverse;
 
-int3 dimension;
+int2 dimension;
+
+int currentColumn;
 
 
 [numthreads(1, 1, 1)]
 void SplitY(uint3 id : SV_DispatchThreadID)
 {
-	int index = id.x * 
+    int index = id.x * dimension.x + id.y;
+
+    Y[index * stride + id.z] = X[index * stride + id.z];
 }
 
 [numthreads(1, 1, 1)]
 void SplitZ(uint3 id : SV_DispatchThreadID)
 {
+    int indexX = (id.x + dimension.y) * dimension.x + id.y;
+    int indexZ = id.x * dimension.x + id.y;
 
+    Z[indexZ * stride + id.z] = X[indexX * stride + id.z];
 }
+
+[numthreads(1, 1, 1)]
+void SetLastColumns(uint3 id : SV_DispatchThreadID)
+{
+    int indexLMOH = id.x * dimension.x + id.y;
+    int indexInverse = id.x * dimension.y + id.y + dimension.y - dimension.x;
+
+    HInverse[indexInverse * stride + id.z] = LastMofH[indexLMOH * stride + id.z];
+}
+
+
+
+[numthreads(1, 1, 1)]
+void FinalizeInverse(uint3 id : SV_DispatchThreadID)
+{
+    int indexInverse = id.x * dimension.y + currentColumn;
+    int indexH = id.x * dimension.y + id.x + dimension.x;
+
+    float Ei = id.x == currentColumn ? 1 :0;
+
+    Dot(HInverse, H, HInverse, id.x, currentColumn,indexInverse,dimension.y);
+
+    for (int i =0; i < stride; i++)
+    {
+        float val = GetValue(HInverse, indexInverse, i);
+        SetValue(HInverse, indexInverse, i, -val);
+    }
+
+    AddValue(HInverse, indexInverse, 0, 1);
+
+    
+    Divide(HInverse, H, HInverse,indexInverse, indexH, indexInverse,a)
+}
+
+
