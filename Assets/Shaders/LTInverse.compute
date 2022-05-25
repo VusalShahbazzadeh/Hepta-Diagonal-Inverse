@@ -1,0 +1,70 @@
+#pragma kernel Inverse
+#pragma kernel Normalize
+#pragma kernel PopulateAugmented
+#pragma kernel SplitAugmented
+
+
+#include "Assets/Shaders/Core/MathOperations.hlsl"
+
+RWStructuredBuffer<float> mat;
+int currentRow;
+int dimension;
+int diagonalDistances[7];
+
+RWStructuredBuffer<float> augmented;
+RWStructuredBuffer<float> inverse;
+
+
+void DivideRow(int row, int valueIndex)
+{
+    for (int i = 0; i < dimension * 2; i++)
+    {
+        Divide(augmented, augmented, row*dimension*2 + i, valueIndex, row*dimension*2+i, a);
+        // Divide(mat, mat, row * dimension + i, valueIndex, row*dimension + i, a);
+        // Divide(inverse, inverse, row * dimension + i, valueIndex, row*dimension + i, b);
+    }
+}
+
+void SubtractRow(int fromRow, int row, int divideIndex)
+{
+    if (CheckForZero(augmented,divideIndex))
+    {
+        return;
+    }
+    DivideRow(fromRow, divideIndex);
+    for (int i = 0; i < dimension*2; i++)
+    {
+        Add(augmented, augmented, fromRow*dimension*2 + i, row*dimension*2 + i, fromRow*dimension*2 +i, -1);
+    }
+}
+
+[numthreads(1,1,1)]
+void Inverse(uint3 id : SV_DispatchThreadID)
+{
+    int distance = diagonalDistances[id.x];
+    SubtractRow(currentRow+distance+1, currentRow, currentRow*dimension*dimension*2 + currentRow + dimension);
+}
+
+[numthreads(1,1,1)]
+void Normalize(uint3 id : SV_DispatchThreadID)
+{
+    const int valueIndex = currentRow * dimension * 2 + currentRow + dimension;
+
+    Divide(augmented, augmented, currentRow*dimension*2 + id.x, valueIndex, currentRow*dimension*2 + id.x,a);
+}
+
+[numthreads(1,1,1)]
+void PopulateAugmented(uint3 id : SV_DispatchThreadID)
+{
+    int column = id.y + diagonalDistances[id.x];
+    float val = GetValue(mat, id.y * dimension + column,id.z);
+    SetValue(augmented, id.y * dimension*2 + column + dimension, id.z, val);
+    // float val = GetValue(mat, id.x*dimension + id.y, id.z);
+    // SetValue(augmented, id.x * dimension*2 + id.y + dimension, id.z, val);
+}
+[numthreads(1,1,1)]
+void SplitAugmented(uint3 id : SV_DispatchThreadID)
+{
+    float val = GetValue(augmented, id.x*dimension * 2 + id.y, id.z);
+    SetValue(inverse, id.x * dimension + id.y, id.z, val);
+}

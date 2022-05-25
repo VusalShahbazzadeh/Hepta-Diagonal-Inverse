@@ -1,0 +1,28 @@
+#pragma kernel GetA
+#pragma kernel GetB
+
+#include "Assets/Shaders/Core/MathOperations.hlsl"
+
+RWStructuredBuffer<float> extendedInverse;
+
+int dimension;
+int diagonalDistances[7];
+
+RWStructuredBuffer<float> A;
+RWStructuredBuffer<float> B;
+
+
+[numthreads(1,1,1)]
+void GetA (uint3 id : SV_DispatchThreadID)
+{
+    int m = diagonalDistances[6];
+    float val = GetValue(extendedInverse, id.x*(dimension+m) + id.y, id.z);
+    SetValue(A, id.x * m + id.y, id.z, val);
+}
+[numthreads(1,1,1)]
+void GetB (uint3 id : SV_DispatchThreadID)
+{
+    int m = diagonalDistances[6];
+    float val = GetValue(A, (id.x + dimension)*m + id.y, id.z);
+    SetValue(B, id.x * m + id.y, id.z, val);
+}
