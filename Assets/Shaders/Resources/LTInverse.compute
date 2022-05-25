@@ -4,7 +4,7 @@
 #pragma kernel SplitAugmented
 
 
-#include "Assets/Shaders/Core/MathOperations.hlsl"
+#include "Core/MathOperations.hlsl"
 
 RWStructuredBuffer<float> mat;
 int currentRow;
@@ -19,7 +19,7 @@ void DivideRow(int row, int valueIndex)
 {
     for (int i = 0; i < dimension * 2; i++)
     {
-        Divide(augmented, augmented, row*dimension*2 + i, valueIndex, row*dimension*2+i, a);
+        Divide(augmented, augmented,augmented, row*dimension*2 + i, valueIndex, row*dimension*2+i, a);
         // Divide(mat, mat, row * dimension + i, valueIndex, row*dimension + i, a);
         // Divide(inverse, inverse, row * dimension + i, valueIndex, row*dimension + i, b);
     }
@@ -50,7 +50,7 @@ void Normalize(uint3 id : SV_DispatchThreadID)
 {
     const int valueIndex = currentRow * dimension * 2 + currentRow + dimension;
 
-    Divide(augmented, augmented, currentRow*dimension*2 + id.x, valueIndex, currentRow*dimension*2 + id.x,a);
+    Divide(augmented, augmented,augmented, currentRow*dimension*2 + id.x, valueIndex, currentRow*dimension*2 + id.x,a);
 }
 
 [numthreads(1,1,1)]

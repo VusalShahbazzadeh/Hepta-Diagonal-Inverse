@@ -97,13 +97,13 @@ public class Inverse
         for(int i =0; i<dimension;i++)
         {
         	int index = i * dimension*2 + i;
-        	inverse[index*stride + maxPower] = 1;
+        	augmented[index*stride + maxPower] = 1;
         }
     }
     
     private void SetShaderData(int numberOfKernels)
     {
-	    InverseShader = Resources.Load<ComputeShader>("Assets/Shaders/Inverse.compute");
+	    InverseShader = Resources.Load<ComputeShader>("InverseShader");
 	    matrixBuffer = new ComputeBuffer(matrix.Length, sizeof(float));
 	    inverseBuffer = new ComputeBuffer(inverse.Length, sizeof(float));
 	    augmentedBuffer = new ComputeBuffer(augmented.Length, sizeof(float));

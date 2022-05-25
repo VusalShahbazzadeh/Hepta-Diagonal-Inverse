@@ -31,7 +31,7 @@ public class LTInverse
         augmented = new float[lTMatrix.Length * 2];
         inverse = new float[lTMatrix.Length];
         this.maxPower = maxPower;
-        ltInverse = Resources.Load<ComputeShader>("Assets/Shaders/LTInverse.compute");
+        ltInverse = Resources.Load<ComputeShader>("LTInverse");
 
         matrixBuffer = new ComputeBuffer(matrix.Length, sizeof(float));
         augmentedBuffer = new ComputeBuffer(augmented.Length, sizeof(float));
@@ -103,6 +103,7 @@ public class LTInverse
         {
             ltInverse.SetBuffer(i, "mat", matrixBuffer);
             ltInverse.SetBuffer(i, "augmented", augmentedBuffer);
+            ltInverse.SetBuffer(i, "inverse", inverseBuffer);
         }
 
         ltInverse.SetInt("currentRow", 0);

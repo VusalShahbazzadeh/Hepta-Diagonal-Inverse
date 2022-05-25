@@ -1,6 +1,6 @@
 #pragma kernel CSMain
 
-#include "Assets/Shaders/Core/MathOperations.hlsl"
+#include "Core/MathOperations.hlsl"
 
 RWStructuredBuffer<float> mat;
 RWStructuredBuffer<float> inverse;

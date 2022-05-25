@@ -2,7 +2,7 @@
 #pragma kernel GetB
 #pragma kernel GetD
 
-#include "Assets/Shaders/Core/MathOperations.hlsl"
+#include "Core/MathOperations.hlsl"
 
 RWStructuredBuffer<float> extendedInverse;
 

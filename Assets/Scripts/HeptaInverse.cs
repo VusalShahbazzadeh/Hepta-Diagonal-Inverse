@@ -22,7 +22,8 @@ public class HeptaInverse
     private float[] X;
     private float[] Y;
     private float[] Z;
-    private float[] inverse;
+    private float[] inverseTerminal;
+    private float[] inverseReal;
 
     private ComputeShader HInverse;
     private ComputeShader LastMOfH;
@@ -82,7 +83,7 @@ public class HeptaInverse
 
         FinalizeInverse();
 
-        return inverse;
+        return inverseReal;
     }
 
     private void InverseExtendedMatrix()
@@ -168,9 +169,21 @@ public class HeptaInverse
             LastMOfH.Dispatch(FinalizeInverseKernel, dimension,1,1);
         }
         
-        InverseBuffer.GetData(inverse);
+        InverseBuffer.GetData(inverseTerminal);
     }
 
+
+    private void FillInverse()
+    {
+        for (var i = 0; i < dimension; i++)
+        {
+            for (var j = 0; j < dimension; j++)
+            {
+                int index = i * dimension + j;
+                inverseReal[index] = inverseTerminal[index * stride + maxPower];
+            }
+        }
+    }
 
 
     #region Shader
@@ -178,20 +191,24 @@ public class HeptaInverse
 
     private void SetShaderData()
     {
-        HInverse = Resources.Load<ComputeShader>("Assets/Shaders/HeptaInverse.compute");
-        LastMOfH = Resources.Load<ComputeShader>("Assets/Shaders/LastMofH.compute");
+        HInverse = Resources.Load<ComputeShader>("HeptaInverse");
+        LastMOfH = Resources.Load<ComputeShader>("LastMofH");
 
         if (HInverse is null)
         {
             throw new Exception("Shader for inversion is missing");
         }
+
+        extendedInverse = new float[(dimension + diagonalDistances[6]) * (dimension + diagonalDistances[6]) * stride];
+        BInverse = new float[diagonalDistances[6]* diagonalDistances[6] * stride];
         A = new float[(dimension + diagonalDistances[6]) * diagonalDistances[6] * stride];
         B = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         D = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         X = new float[(dimension + diagonalDistances[6]) * diagonalDistances[6] * stride];
         Y = new float[dimension * diagonalDistances[6] * stride];
         Z = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
-        inverse = new float[dimension * dimension * stride];
+        inverseTerminal = new float[dimension * dimension * stride];
+        determinant = new float[stride];
         GetAKernel = HInverse.FindKernel("GetA");
         GetBKernel = HInverse.FindKernel("GetB");
         GetDKernel = HInverse.FindKernel("GetD");
@@ -220,7 +237,7 @@ public class HeptaInverse
         XBuffer = new ComputeBuffer(X.Length, sizeof(float));
         YBuffer = new ComputeBuffer(Y.Length, sizeof(float));
         ZBuffer = new ComputeBuffer(Z.Length, sizeof(float));
-        InverseBuffer = new ComputeBuffer(inverse.Length, sizeof(float));
+        InverseBuffer = new ComputeBuffer(inverseTerminal.Length, sizeof(float));
         
         
         matrixBuffer.SetData(matrix);
@@ -233,7 +250,7 @@ public class HeptaInverse
         XBuffer.SetData(X);
         YBuffer.SetData(Y);
         ZBuffer.SetData(Z);
-        InverseBuffer.SetData(inverse);
+        InverseBuffer.SetData(inverseTerminal);
         
         
         HInverse.SetBuffer(GetAKernel, "extendedInverse", extendedInverseBuffer);
@@ -280,7 +297,7 @@ public class HeptaInverse
         for (int i = 0; i < m; i++)
         {
             extendedMatrix.SetVal(stride, i * dimension + i, 1, maxPower);
-            extendedMatrix.SetVal(stride, (extendedDimension - i) * extendedDimension + extendedDimension - i, 1,
+            extendedMatrix.SetVal(stride, (extendedDimension-1 - i) * extendedDimension + extendedDimension - i-1, 1,
                 maxPower);
         }
     }
@@ -294,7 +311,7 @@ public class HeptaInverse
             var val = source.GetVal(1, i);
 
             if (val == 0)
-                matrix.SetValue(stride, i, 1, maxPower+1);
+                matrix.SetVal(stride, i, 1, maxPower+1);
             else
                 matrix.SetVal(stride, i, val, maxPower);
         }

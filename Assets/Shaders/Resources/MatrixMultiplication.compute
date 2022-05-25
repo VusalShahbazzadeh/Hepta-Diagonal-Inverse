@@ -1,7 +1,7 @@
 #pragma kernel CSMain
 #pragma kernel CSMainScalar
 
-#include "Assets/Shaders/Core/MathOperations.hlsl"
+#include "Core/MathOperations.hlsl"
 
 
 

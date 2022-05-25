@@ -17,7 +17,7 @@ public static class MatrixExtensions
 
     public static float[] Multiply(float[] m, float b, int stride, (int height, int width) dimensions)
     {
-        var computeShader = Resources.Load<ComputeShader>("Assets/Shaders/MatrixMultiplication.compute");
+        var computeShader = Resources.Load<ComputeShader>("MatrixMultiplication");
         var mRes = new float[m.Length];
 
         var mBuffer = new ComputeBuffer(m.Length, sizeof(float));
@@ -45,7 +45,7 @@ public static class MatrixExtensions
         if (dimensionsA.width != dimensionsB.height)
             throw new Exception("Dimensions of matrices do not match");
 
-        var computeShader = Resources.Load<ComputeShader>("Assets/Shaders/MatrixMultiplication.compute");
+        var computeShader = Resources.Load<ComputeShader>("MatrixMultiplication");
 
         var mRes = new float[dimensionsA.height * dimensionsB.width * stride];
 

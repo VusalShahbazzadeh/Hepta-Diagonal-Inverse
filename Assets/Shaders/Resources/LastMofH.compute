@@ -1,9 +1,9 @@
-#pragma kernel SplitY
-#pragma kernel SplitZ
+#pragma kernel GetY
+#pragma kernel GetZ
 #pragma kernel SetLastColumns
 #pragma kernel FinalizeInverse
 
-#include "Assets/Shaders/Core/MathOperations.hlsl"
+#include "Core/MathOperations.hlsl"
 
 RWStructuredBuffer<float> H;
 RWStructuredBuffer<float> X;
@@ -18,7 +18,7 @@ int currentColumn;
 
 
 [numthreads(1, 1, 1)]
-void SplitY(uint3 id : SV_DispatchThreadID)
+void GetY(uint3 id : SV_DispatchThreadID)
 {
     int index = id.x * dimension.x + id.y;
 
@@ -26,7 +26,7 @@ void SplitY(uint3 id : SV_DispatchThreadID)
 }
 
 [numthreads(1, 1, 1)]
-void SplitZ(uint3 id : SV_DispatchThreadID)
+void GetZ(uint3 id : SV_DispatchThreadID)
 {
     int indexX = (id.x + dimension.y) * dimension.x + id.y;
     int indexZ = id.x * dimension.x + id.y;

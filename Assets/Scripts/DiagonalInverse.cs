@@ -50,7 +50,7 @@ public class DiagonalInverse
     
     private void SetShaderData()
     {
-        DiagonalInverseShader = Resources.Load<ComputeShader>("Assets/Shaders/DiagonalInverse.compute");
+        DiagonalInverseShader = Resources.Load<ComputeShader>("DiagonalInverse");
         
         matrixBuffer = new ComputeBuffer(matrix.Length, sizeof(float));
         inverseBuffer = new ComputeBuffer(inverse.Length, sizeof(float));
