@@ -1,5 +1,6 @@
 #pragma kernel GetA
 #pragma kernel GetB
+#pragma kernel GetD
 
 #include "Assets/Shaders/Core/MathOperations.hlsl"
 
@@ -10,6 +11,10 @@ int diagonalDistances[7];
 
 RWStructuredBuffer<float> A;
 RWStructuredBuffer<float> B;
+
+RWStructuredBuffer<float> BInverse;
+RWStructuredBuffer<float> det;
+RWStructuredBuffer<float> D;
 
 
 [numthreads(1,1,1)]
@@ -25,4 +30,12 @@ void GetB (uint3 id : SV_DispatchThreadID)
     int m = diagonalDistances[6];
     float val = GetValue(A, (id.x + dimension)*m + id.y, id.z);
     SetValue(B, id.x * m + id.y, id.z, val);
+}
+[numthreads(1,1,1)]
+void GetD (uint3 id : SV_DispatchThreadID)
+{
+    int m = diagonalDistances[6];
+    int ID = id.x*m + id.y;
+    int sign = (id.x % 2 - 1)*(id.y%2 -1); 
+    Multiply(BInverse, det,D,ID ,0,ID,sign)
 }

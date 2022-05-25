@@ -16,6 +16,9 @@ public class HeptaInverse
     private float[] extendedInverse;
     private float[] A;
     private float[] B;
+    private float[] BInverse;
+    private float[] determinant;
+    private float[] D;
 
     private ComputeShader HInverse;
 
@@ -26,6 +29,9 @@ public class HeptaInverse
     private ComputeBuffer extendedInverseBuffer;
     private ComputeBuffer ABuffer;
     private ComputeBuffer BBuffer;
+    private ComputeBuffer BInverseBuffer;
+    private ComputeBuffer determinantBuffer;
+    private ComputeBuffer DBuffer;
 
     public HeptaInverse(float[] matrix, int[] diagonalDistances)
     {
@@ -53,6 +59,8 @@ public class HeptaInverse
         InverseExtendedMatrix();
         
         GetA();
+        GetB();
+        GetD();
     }
 
     private void InverseExtendedMatrix()
@@ -68,9 +76,6 @@ public class HeptaInverse
             extendedDiagonalDistances, maxPower);
         extendedInverse = ltInverse.Execute();
 
-        GetA();
-        GetB();
-        GetD();
     }
 
     private void GetA()
@@ -85,6 +90,12 @@ public class HeptaInverse
 
     private void GetD()
     {
+        var inverter = new Inverse(B,diagonalDistances[6], stride, maxPower);
+        BInverse = inverter.Execute();
+        BInverseBuffer.SetData(BInverse);
+        determinant = inverter.determinant;
+        determinantBuffer.SetData(determinant);
+        
         HInverse.Dispatch(GetDKernel, diagonalDistances[6], diagonalDistances[6],1);
     }
 
@@ -101,6 +112,7 @@ public class HeptaInverse
         }
         A = new float[(dimension + diagonalDistances[6]) * diagonalDistances[6] * stride];
         B = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
+        D = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         GetAKernel = HInverse.FindKernel("GetA");
         GetBKernel = HInverse.FindKernel("GetB");
         GetDKernel = HInverse.FindKernel("GetD");
@@ -113,10 +125,26 @@ public class HeptaInverse
         extendedInverseBuffer = new ComputeBuffer(extendedInverse.Length, stride);
         ABuffer = new ComputeBuffer(A.Length, sizeof(float));
         BBuffer = new ComputeBuffer(B.Length, sizeof(float));
+        BInverseBuffer = new ComputeBuffer(BInverse.Length, sizeof(float));
+        DBuffer = new ComputeBuffer(D.Length, sizeof(float));
+        determinantBuffer = new ComputeBuffer(stride, sizeof(float));
+        
+        
+        extendedInverseBuffer.SetData(extendedInverse);
+        ABuffer.SetData(A);
+        BBuffer.SetData(B);
+        BInverseBuffer.SetData(BInverse);
+        determinantBuffer.SetData(determinant);
+        DBuffer.SetData(D);
+        
+        
         HInverse.SetBuffer(GetAKernel, "extendedInverse", extendedInverseBuffer);
         HInverse.SetBuffer(GetAKernel, "A", ABuffer);
         HInverse.SetBuffer(GetBKernel, "A", ABuffer);
         HInverse.SetBuffer(GetBKernel, "B", BBuffer);
+        HInverse.SetBuffer(GetDKernel, "BInverse", BInverseBuffer);
+        HInverse.SetBuffer(GetDKernel, "det", determinantBuffer);
+        HInverse.SetBuffer(GetDKernel, "D", DBuffer);
     }
 
     #endregion

@@ -36,7 +36,7 @@ public class LTInverse
         matrixBuffer = new ComputeBuffer(matrix.Length, sizeof(float));
         augmentedBuffer = new ComputeBuffer(augmented.Length, sizeof(float));
         inverseBuffer = new ComputeBuffer(inverse.Length, sizeof(float));
-        
+
         PopulateAugmentedInverse();
         matrixBuffer.SetData(matrix);
         augmentedBuffer.SetData(augmented);
@@ -79,11 +79,11 @@ public class LTInverse
 
     private void PopulateAugmentedInverse()
     {
-	for (int i = 0; i < dimension; i++)
-	{
-	    int index = i * dimension * 2 + i;
-	    augmented[index * stride + maxPower] = 1;
-	}
+        for (int i = 0; i < dimension; i++)
+        {
+            int index = i * dimension * 2 + i;
+            augmented[index * stride + maxPower] = 1;
+        }
     }
 
     private void SplitAugmented()
@@ -103,12 +103,11 @@ public class LTInverse
         {
             ltInverse.SetBuffer(i, "mat", matrixBuffer);
             ltInverse.SetBuffer(i, "augmented", augmentedBuffer);
-
         }
 
         ltInverse.SetInt("currentRow", 0);
         ltInverse.SetInt("dimension", dimension);
-        ltInverse.SetInt("stride",stride);
+        ltInverse.SetInt("stride", stride);
         ltInverse.SetInt("maxPower", maxPower);
         ltInverse.SetInts("diagonalDistances", diagonalDistances);
         normalizeKernel = ltInverse.FindKernel("Normalize");

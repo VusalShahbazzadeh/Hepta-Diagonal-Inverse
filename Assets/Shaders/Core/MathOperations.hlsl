@@ -8,7 +8,7 @@ bool CheckForZero(RWStructuredBuffer<float> mat, int index)
 {
     bool res = true;
     for (int i =0;i< stride & res; i++)
-        res &= GetValue(mat,index,i) == 0;
+        res = res && GetValue(mat,index,i) == 0;
 
     return res;
 }
@@ -46,7 +46,27 @@ for (int index= max(- maxPower, - maxPower - identifier##bLowestPower); index<=m
         float bFactor = GetValue(NAME1,bIndex, j );\
         AddValue(NAME2, resIndex, index + j, aFactor * bFactor);\
     }\
+}
+
+
+#define Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex)for (int index= - maxPower; index<=maxPower; index++)\
+{\
+float aFactor = GetValue(NAME1,aIndex,index);\
+for (int j = max(- maxPower,-maxPower-index) ; j <= min(maxPower, maxPower-index);j++)\
+{\
+float bFactor = GetValue(NAME2,bIndex, j );\
+AddValue(NAME3, resIndex, index + j, aFactor * bFactor);\
 }\
+}
+#define Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex, factor)for (int index= - maxPower; index<=maxPower; index++)\
+{\
+float aFactor = GetValue(NAME1,aIndex,index);\
+for (int j = max(- maxPower,-maxPower-index) ; j <= min(maxPower, maxPower-index);j++)\
+{\
+float bFactor = GetValue(NAME2,bIndex, j );\
+AddValue(NAME3, resIndex, index + j, aFactor * bFactor*factor);\
+}\
+}
 
 #define Add(NAME1, NAME2, aIndex, bIndex, resIndex, sign)for (int index= - maxPower; index<=maxPower; index++)\
 {\

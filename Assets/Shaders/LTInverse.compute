@@ -42,7 +42,7 @@ void SubtractRow(int fromRow, int row, int divideIndex)
 void Inverse(uint3 id : SV_DispatchThreadID)
 {
     int distance = diagonalDistances[id.x];
-    SubtractRow(currentRow+distance+1, currentRow, currentRow*dimension*dimension*2 + currentRow + dimension);
+    SubtractRow(currentRow+distance+1, currentRow, currentRow*dimension*2 + currentRow + dimension);
 }
 
 [numthreads(1,1,1)]
