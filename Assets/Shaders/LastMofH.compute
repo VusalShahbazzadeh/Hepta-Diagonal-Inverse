@@ -1,0 +1,25 @@
+#pragma kernel SplitY
+#pragma kernel SplitZ
+
+#include "Assets/Shaders/Core/MathOperations.hlsl"
+
+
+RWStructuredBuffer<float> X;
+RWStructuredBuffer<float> Y;
+RWStructuredBuffer<float> Z;
+RWStructuredBuffer<float> HInverse;
+
+int3 dimension;
+
+
+[numthreads(1, 1, 1)]
+void SplitY(uint3 id : SV_DispatchThreadID)
+{
+	int index = id.x * 
+}
+
+[numthreads(1, 1, 1)]
+void SplitZ(uint3 id : SV_DispatchThreadID)
+{
+
+}

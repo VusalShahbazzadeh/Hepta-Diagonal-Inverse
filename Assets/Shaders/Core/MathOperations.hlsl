@@ -74,3 +74,12 @@ AddValue(NAME3, resIndex, index + j, aFactor * bFactor*factor);\
     float bValue = GetValue(NAME1, bIndex, index);\
     SetValue(NAME2, resIndex, index, aValue+bValue*sign);\
 }\
+
+
+#define Dot(NAME1, NAME2, NAME3, rowA, columnB, resIndex, dimension)\
+    for (int index = 0; index < dimension; index++)\
+    {\
+        int aIndex = rowA * dimension + index;\
+        int bIndex = index * dimension + columnB;\
+        Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex,1);\
+    }\

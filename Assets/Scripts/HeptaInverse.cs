@@ -19,6 +19,7 @@ public class HeptaInverse
     private float[] BInverse;
     private float[] determinant;
     private float[] D;
+    private float[] X;
 
     private ComputeShader HInverse;
 
@@ -61,6 +62,7 @@ public class HeptaInverse
         GetA();
         GetB();
         GetD();
+        GetX();
     }
 
     private void InverseExtendedMatrix()
@@ -97,7 +99,18 @@ public class HeptaInverse
         determinantBuffer.SetData(determinant);
         
         HInverse.Dispatch(GetDKernel, diagonalDistances[6], diagonalDistances[6],1);
+
     }
+
+    private void GetX()
+    {
+        ABuffer.GetData(A);
+        DBuffer.GetData(D);
+
+        X = MatrixExtensions.Multiply(A, D, stride, (dimension + diagonalDistances[6], diagonalDistances[6]), (diagonalDistances[6], diagonalDistances[6]));
+    }
+
+
 
     #region Shader
 
