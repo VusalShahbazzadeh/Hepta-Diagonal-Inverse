@@ -1,2 +1,2 @@
-# Inverse of a general hepta-diagonal matrix
+# New algorithm for inverting a general hepta-diagonal matrix
  
