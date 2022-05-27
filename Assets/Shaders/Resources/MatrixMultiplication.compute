@@ -1,5 +1,6 @@
 #pragma kernel CSMain
 #pragma kernel CSMainScalar
+#pragma kernel CSMainDiagonal
 
 #include "Core/MathOperations.hlsl"
 
@@ -13,16 +14,25 @@ int2 dimension;
 
 float scalar;
 
-[numthreads(1, 1, 1)]
+[numthreads(32, 32, 1)]
 void CSMain(uint3 id : SV_DispatchThreadID) 
 {
-	Dot(A, B, Res, id.x, id.y, id.x * dimension.y + id.y, dimension.x)
+	Dot(A, B, Res, id.x, id.y, id.x * dimension.y + id.y + MaxIfExceed, dimension.x,0,dimension.x)
 }
 [numthreads(1, 1, 1)]
-void CSMainScalar(uint3 id : SV_DispatchThreadID) 
+void CSMainScalar(uint3 id : SV_DispatchThreadID)  
 {
 	int index = id.x * dimension.y + id.y;
 	float val = A[index * stride + id.z];
 
 	Res[index * stride + id.z] = val * scalar;
 }
+[numthreads(1, 1, 1)]
+void CSMainDiagonal(uint3 id : SV_DispatchThreadID)  
+{
+	int aIndex = id.x * dimension.y + id.y;
+	int bIndex = id.y * dimension.y + id.y;
+	
+	Multiply(A,B,Res, aIndex, bIndex, aIndex,1);
+}
+

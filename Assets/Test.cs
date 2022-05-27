@@ -18,9 +18,10 @@ public class Test : MonoBehaviour
         var lines = text.Split('\n');
         var valuesStr = lines.Select(x => x.Split('\t')).ToArray();
 
-        matrix = new float[valuesStr.Length * valuesStr.Length];
+        int dimension = valuesStr.Length-1;
+        matrix = new float[dimension * dimension];
 
-        for (var l = 0; l < valuesStr.Length; l++)
+        for (var l = 0; l < dimension; l++)
         {
             var line = valuesStr[l];
             for (var v = 0; v < line.Length; v++)
@@ -28,7 +29,7 @@ public class Test : MonoBehaviour
                 var value = line[v];
                 if (float.TryParse(value, out var f))
                 {
-                    matrix[l * valuesStr.Length + v] = f;
+                    matrix[l * dimension + v] = f;
                 }
                 // var f = float.Parse(value,CultureInfo.InvariantCulture.NumberFormat);
             }
@@ -36,17 +37,21 @@ public class Test : MonoBehaviour
 
         var startTime = DateTime.Now;
 
-        var inverter = new HeptaInverse(matrix, new[] {-25, -5, -1, 0, 1, 5, 25});
+        var size = new Vector3Int(10, 5, 5);
+        var inverter = new HeptaInverse(matrix, new[]
+        {
+            -size.x * size.y, -size.x,-1,0,1,size.x, size.x*size.y
+        }, dimension);
         var res = inverter.Execute();
 
         Debug.Log((DateTime.Now - startTime).TotalSeconds);
 
         var str = "";
-        for (var i = 0; i < valuesStr.Length; i++)
+        for (var i = 0; i < dimension; i++)
         {
-            for (var j = 0; j < valuesStr.Length; j++)
+            for (var j = 0; j < dimension; j++)
             {
-                str += res[i * valuesStr.Length + j] + "\t";
+                str += res[i * dimension + j] + "\t";
             }
 
             str += "\n";

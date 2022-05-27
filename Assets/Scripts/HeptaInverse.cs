@@ -1,15 +1,13 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public class HeptaInverse
 {
-    public readonly int maxPower;
-    public readonly int stride;
-    public readonly int dimension;
-    public readonly int[] diagonalDistances;
-    public float[] matrix;
+    private readonly int maxPower;
+    private readonly int stride;
+    private readonly int dimension;
+    private readonly int[] diagonalDistances;
+    private float[] matrix;
 
 
     private float[] extendedMatrix;
@@ -48,15 +46,12 @@ public class HeptaInverse
     private ComputeBuffer ZBuffer;
     private ComputeBuffer InverseBuffer;
 
-    public HeptaInverse(float[] matrix, int[] diagonalDistances)
+    public HeptaInverse(float[] matrix, int[] diagonalDistances, int dimension)
     {
         if (diagonalDistances.Length != 7)
             throw new Exception("7 Diagonal distances required for hepta-diagonal matrix");
 
-        var dimensionFloat = Mathf.Sqrt(matrix.Length);
-        dimension = (int) dimensionFloat;
-        if (dimensionFloat != dimension)
-            throw new Exception("Matrix should be square");
+        this.dimension = dimension;
 
         maxPower = NumberOfZeros(matrix, 1, diagonalDistances[6]);
         this.diagonalDistances = diagonalDistances;
@@ -70,18 +65,20 @@ public class HeptaInverse
     public float[] Execute()
     {
         PopulateExtendedMatrix();
-
         InverseExtendedMatrix();
-        
         GetA();
         GetB();
         GetD();
+
         GetX();
         GetY();
         GetZ();
+
         LastMColumns();
 
         FinalizeInverse();
+
+        FillInverse();
 
         return inverseReal;
     }
@@ -98,29 +95,27 @@ public class HeptaInverse
         var ltInverse = new LTInverse(extendedMatrix, stride, dimension + diagonalDistances[6],
             extendedDiagonalDistances, maxPower);
         extendedInverse = ltInverse.Execute();
-
     }
 
     private void GetA()
     {
-        HInverse.Dispatch(GetAKernel,dimension + diagonalDistances[6], diagonalDistances[6],stride);
+        HInverse.Dispatch(GetAKernel, dimension + diagonalDistances[6], diagonalDistances[6], stride);
     }
 
     private void GetB()
     {
-        HInverse.Dispatch(GetBKernel, diagonalDistances[6], diagonalDistances[6],stride);
+        HInverse.Dispatch(GetBKernel, diagonalDistances[6], diagonalDistances[6], stride);
     }
 
     private void GetD()
     {
-        var inverter = new Inverse(B,diagonalDistances[6], stride, maxPower);
+        var inverter = new Inverse(B, diagonalDistances[6], stride, maxPower);
         BInverse = inverter.Execute();
         BInverseBuffer.SetData(BInverse);
         determinant = inverter.determinant;
         determinantBuffer.SetData(determinant);
-        
-        HInverse.Dispatch(GetDKernel, diagonalDistances[6], diagonalDistances[6],1);
 
+        HInverse.Dispatch(GetDKernel, diagonalDistances[6], diagonalDistances[6], 1);
     }
 
     private void GetX()
@@ -128,16 +123,18 @@ public class HeptaInverse
         ABuffer.GetData(A);
         DBuffer.GetData(D);
 
-        X = MatrixExtensions.Multiply(A, D, stride, (dimension + diagonalDistances[6], diagonalDistances[6]), (diagonalDistances[6], diagonalDistances[6]));
+        X = MatrixExtensions.Multiply(A, D, stride, (dimension + diagonalDistances[6], diagonalDistances[6]),
+            (diagonalDistances[6], diagonalDistances[6]));
     }
 
     private void GetY()
     {
-        LastMOfH.Dispatch(GetYKernel, dimension, diagonalDistances[6],stride);
+        LastMOfH.Dispatch(GetYKernel, dimension, diagonalDistances[6], stride);
     }
+
     private void GetZ()
     {
-        LastMOfH.Dispatch(GetZKernel, diagonalDistances[6], diagonalDistances[6],stride);
+        LastMOfH.Dispatch(GetZKernel, diagonalDistances[6], diagonalDistances[6], stride);
     }
 
     private void LastMColumns()
@@ -146,8 +143,8 @@ public class HeptaInverse
         ZBuffer.GetData(Z);
         var dInverter = new DiagonalInverse(Z, diagonalDistances[6], stride, maxPower);
         var zInverse = dInverter.Execute();
-       
-        var lastMColumns = MatrixExtensions.Multiply(Y, zInverse, stride, (dimension, diagonalDistances[6]),
+
+        var lastMColumns = MatrixExtensions.MultiplyToDiagonal(Y, zInverse, stride, (dimension, diagonalDistances[6]),
             (diagonalDistances[6], diagonalDistances[6]));
 
         lastMColumns = MatrixExtensions.Multiply(lastMColumns, -1, stride, (dimension, diagonalDistances[6]));
@@ -155,26 +152,28 @@ public class HeptaInverse
 
         var lastMColumnsBuffer = new ComputeBuffer(lastMColumns.Length, sizeof(float));
         lastMColumnsBuffer.SetData(lastMColumns);
-        LastMOfH.SetBuffer(SetLastColumnsKernel,"LastMofH",lastMColumnsBuffer);
-        LastMOfH.Dispatch(SetLastColumnsKernel,dimension, diagonalDistances[6],stride);
-        
+        LastMOfH.SetBuffer(SetLastColumnsKernel, "LastMofH", lastMColumnsBuffer);
+        LastMOfH.Dispatch(SetLastColumnsKernel, dimension, diagonalDistances[6], stride);
+
         lastMColumnsBuffer.Release();
     }
 
     private void FinalizeInverse()
     {
+        LastMOfH.SetVector("trueDimension", new Vector3(dimension, 1, 1));
         for (var i = dimension - diagonalDistances[6]; i >= 0; i--)
         {
             LastMOfH.SetInt("currentColumn", i);
-            LastMOfH.Dispatch(FinalizeInverseKernel, dimension,1,1);
+            LastMOfH.Dispatch(FinalizeInverseKernel, Mathf.CeilToInt(dimension / 40f), 1, 1);
         }
-        
+
         InverseBuffer.GetData(inverseTerminal);
     }
 
 
     private void FillInverse()
     {
+        inverseReal = new float[dimension * dimension];
         for (var i = 0; i < dimension; i++)
         {
             for (var j = 0; j < dimension; j++)
@@ -188,7 +187,6 @@ public class HeptaInverse
 
     #region Shader
 
-
     private void SetShaderData()
     {
         HInverse = Resources.Load<ComputeShader>("HeptaInverse");
@@ -200,7 +198,7 @@ public class HeptaInverse
         }
 
         extendedInverse = new float[(dimension + diagonalDistances[6]) * (dimension + diagonalDistances[6]) * stride];
-        BInverse = new float[diagonalDistances[6]* diagonalDistances[6] * stride];
+        BInverse = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         A = new float[(dimension + diagonalDistances[6]) * diagonalDistances[6] * stride];
         B = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
         D = new float[diagonalDistances[6] * diagonalDistances[6] * stride];
@@ -219,12 +217,12 @@ public class HeptaInverse
 
         HInverse.SetInt("stride", stride);
         HInverse.SetInt("dimension", dimension);
-        HInverse.SetInt("maxPower",maxPower);
+        HInverse.SetInt("maxPower", maxPower);
         HInverse.SetInts("diagonalDistances", diagonalDistances);
-        
+
         LastMOfH.SetInt("stride", stride);
         LastMOfH.SetVector("dimension", new Vector4(diagonalDistances[6], dimension));
-        LastMOfH.SetInt("maxPower",maxPower);
+        LastMOfH.SetInt("maxPower", maxPower);
         LastMOfH.SetInts("diagonalDistances", diagonalDistances);
 
         matrixBuffer = new ComputeBuffer(matrix.Length, sizeof(float));
@@ -238,8 +236,8 @@ public class HeptaInverse
         YBuffer = new ComputeBuffer(Y.Length, sizeof(float));
         ZBuffer = new ComputeBuffer(Z.Length, sizeof(float));
         InverseBuffer = new ComputeBuffer(inverseTerminal.Length, sizeof(float));
-        
-        
+
+
         matrixBuffer.SetData(matrix);
         extendedInverseBuffer.SetData(extendedInverse);
         ABuffer.SetData(A);
@@ -251,8 +249,8 @@ public class HeptaInverse
         YBuffer.SetData(Y);
         ZBuffer.SetData(Z);
         InverseBuffer.SetData(inverseTerminal);
-        
-        
+
+
         HInverse.SetBuffer(GetAKernel, "extendedInverse", extendedInverseBuffer);
         HInverse.SetBuffer(GetAKernel, "A", ABuffer);
         HInverse.SetBuffer(GetBKernel, "A", ABuffer);
@@ -260,15 +258,17 @@ public class HeptaInverse
         HInverse.SetBuffer(GetDKernel, "BInverse", BInverseBuffer);
         HInverse.SetBuffer(GetDKernel, "det", determinantBuffer);
         HInverse.SetBuffer(GetDKernel, "D", DBuffer);
-        
+
         LastMOfH.SetBuffer(GetYKernel, "X", XBuffer);
         LastMOfH.SetBuffer(GetYKernel, "Y", YBuffer);
-        
+
         LastMOfH.SetBuffer(GetZKernel, "X", XBuffer);
         LastMOfH.SetBuffer(GetZKernel, "Z", ZBuffer);
-        
+
         LastMOfH.SetBuffer(SetLastColumnsKernel, "HInverse", InverseBuffer);
         LastMOfH.SetBuffer(SetLastColumnsKernel, "H", matrixBuffer);
+        LastMOfH.SetBuffer(FinalizeInverseKernel, "HInverse", InverseBuffer);
+        LastMOfH.SetBuffer(FinalizeInverseKernel, "H", matrixBuffer);
     }
 
     #endregion
@@ -287,17 +287,21 @@ public class HeptaInverse
             for (int j = 0; j < dimension; j++)
             {
                 var val = matrix.GetVal(stride, i * dimension + j, maxPower);
-                var valT = matrix.GetVal(stride, i * dimension + j, maxPower+1);
-                
+
                 extendedMatrix.SetVal(stride, (i + m) * extendedDimension + j, val, maxPower);
-                extendedMatrix.SetVal(stride, (i + m) * extendedDimension + j, valT, maxPower+1);
+                if (maxPower > 0)
+                {
+                    var valT = matrix.GetVal(stride, i * dimension + j, maxPower + 1);
+                    extendedMatrix.SetVal(stride, (i + m) * extendedDimension + j, valT, maxPower + 1);
+                }
             }
         }
 
         for (int i = 0; i < m; i++)
         {
             extendedMatrix.SetVal(stride, i * dimension + i, 1, maxPower);
-            extendedMatrix.SetVal(stride, (extendedDimension-1 - i) * extendedDimension + extendedDimension - i-1, 1,
+            extendedMatrix.SetVal(stride, (extendedDimension - 1 - i) * extendedDimension + extendedDimension - i - 1,
+                1,
                 maxPower);
         }
     }
@@ -311,7 +315,7 @@ public class HeptaInverse
             var val = source.GetVal(1, i);
 
             if (val == 0)
-                matrix.SetVal(stride, i, 1, maxPower+1);
+                matrix.SetVal(stride, i, 1, maxPower + 1);
             else
                 matrix.SetVal(stride, i, val, maxPower);
         }

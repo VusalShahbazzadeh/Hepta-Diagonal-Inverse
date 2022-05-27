@@ -7,8 +7,8 @@ int stride;
 bool CheckForZero(RWStructuredBuffer<float> mat, int index)
 {
     bool res = true;
-    for (int i =0;i< stride & res; i++)
-        res = res && GetValue(mat,index,i) == 0;
+    for (int i = 0; i < stride & res; i++)
+        res = res && GetValue(mat, index, i) == 0;
 
     return res;
 }
@@ -58,7 +58,8 @@ float bFactor = GetValue(NAME2,bIndex, j );\
 AddValue(NAME3, resIndex, index + j, aFactor * bFactor);\
 }\
 }
-#define Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex, factor)for (int index= - maxPower; index<=maxPower; index++)\
+#define Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex, factor)\
+for (int index= - maxPower; index<=maxPower; index++)\
 {\
 float aFactor = GetValue(NAME1,aIndex,index);\
 for (int j = max(- maxPower,-maxPower-index) ; j <= min(maxPower, maxPower-index);j++)\
@@ -73,13 +74,16 @@ AddValue(NAME3, resIndex, index + j, aFactor * bFactor*factor);\
     float aValue = GetValue(NAME1, aIndex, index);\
     float bValue = GetValue(NAME1, bIndex, index);\
     SetValue(NAME2, resIndex, index, aValue+bValue*sign);\
-}\
+}
 
-
-#define Dot(NAME1, NAME2, NAME3, rowA, columnB, resIndex, dimension)\
-    for (int index = 0; index < dimension; index++)\
+#define Dot(NAME1, NAME2, NAME3, rowA, columnB, resIndex, dimension,start,end)\
+    for (int index = start; index < end; index++)\
     {\
         int aIndex = rowA * dimension + index;\
         int bIndex = index * dimension + columnB;\
         Multiply(NAME1, NAME2, NAME3, aIndex, bIndex, resIndex,1);\
-    }\
+    }
+
+int3 trueDimension;
+const int INT_MAX = 2147483647;
+#define MaxIfExceed (id.x >= trueDimension.x || id.y >= trueDimension.y || id.z >= trueDimension.z)*INT_MAX
